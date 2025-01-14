@@ -1,27 +1,18 @@
-mod schema;
+mod graphql_schema;
+mod xml_schema;
 
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql::Schema;
-use async_graphql_warp::{graphql, GraphQLResponse};
-use schema::{MutationRoot, QueryRoot};
-use warp::{http::Response as HttpResponse, Filter};
+use graphql_schema::{create_graphql_schema, get_graphql_routes};
+use warp::Filter;
+use xml_schema::get_xml_routes;
 
 #[tokio::main]
 async fn main() {
-    let schema = Schema::build(QueryRoot, MutationRoot, async_graphql::EmptySubscription).finish();
-    let graphql_filter = graphql(schema).and_then(
-        |(schema, request): (Schema<QueryRoot, MutationRoot, _>, async_graphql::Request)| async move {
-            let resp = schema.execute(request).await;
-            Ok::<_, std::convert::Infallible>(GraphQLResponse::from(resp))
-        },
-    );
-    let playground_route = warp::path("playground").and(warp::get()).map(|| {
-        HttpResponse::builder()
-            .header("content-type", "text/html")
-            .body(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
-    });
-    let routes = playground_route.or(warp::path("graphql").and(graphql_filter));
+    let schema = create_graphql_schema();
+    let graphql_routes = get_graphql_routes(schema);
+    let xml_routes = get_xml_routes();
+    let routes = graphql_routes.or(xml_routes);
     println!("GraphQL Playground: http://localhost:8000/playground");
     println!("GraphQL endpoint:   http://localhost:8000/graphql");
+    println!("XML endpoint:       POST or GET http://localhost:8000/xml");
     warp::serve(routes).run(([127, 0, 0, 1], 8000)).await;
 }

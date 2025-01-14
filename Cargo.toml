@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 async-graphql = "7.0.13"
 async-graphql-warp = "7.0.13"
+bytes = "1.9.0"
 serde = "1.0.217"
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros"] }
 warp = "0.3.7"
